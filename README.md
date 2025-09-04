@@ -14,12 +14,12 @@ To interact with your Ring camera, you’ll need the ring_camera Python package.
    ```
 2. Generate the credential token file
 
-The cache file stores your Ring credentials securely so you don’t have to log in every time. You can generate it via the CLI:
+   The cache file stores your Ring credentials securely so you don’t have to log in every time. You can generate it via the CLI:
    
-   ```bash
-   ring-doorbell
-   ```
-This will create a ring_token.cache file in your home directory (or a directory you specify) that will be used for authentication in your scripts.
+      ```bash
+      ring-doorbell
+      ```
+   This will create a `ring_token.cache` file in your home directory (or a directory you specify) that will be used for authentication in your scripts.
 
 ## Step Two: Create a Fiftyone Dataset from your ring camera 
 1. Install the fiftyone package
@@ -29,6 +29,6 @@ This will create a ring_token.cache file in your home directory (or a directory 
    ```
  2. Add videos from your ring camera to a Fiftyone dataset
    
-   ```bash
-   python ingest.py ring_token.cache
-   ```
+      ```bash
+      python ingest.py ring_token.cache
+      ```
