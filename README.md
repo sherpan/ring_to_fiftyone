@@ -10,7 +10,7 @@ To interact with your Ring camera, you’ll need the ring_camera Python package.
    ```bash
    pip install ring_camera
    ```
-2. Generate the cache file
+2. Generate the credential token file
 
 The cache file stores your Ring credentials securely so you don’t have to log in every time. You can generate it via the CLI:
    
