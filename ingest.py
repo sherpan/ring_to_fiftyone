@@ -1,36 +1,31 @@
-from getpass import getpass
+import sys
 from ring_doorbell import Auth, Ring
 import json, requests, os
 import fiftyone as fo
 
+
 USER_AGENT = "RingDownloader"
-CACHE_FILE = "ring_token.cache"  # using .cache extension
 
-OUTPUT_DIR = "ring_videos"       # where videos will be saved
+# Require cache file as CLI argument
+if len(sys.argv) < 2:
+    print("Usage: python ingest.py <cache_file>")
+    sys.exit(1)
+CACHE_FILE = sys.argv[1]
 
-# Create output folder if it doesn't exist
+OUTPUT_DIR = "ring_videos"  # where videos will be saved
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
-def save_token(token):
-    with open(CACHE_FILE, "w") as f:
-        json.dump(token, f)
+
+
 
 # --- Auth ---
-if os.path.exists(CACHE_FILE):
-    with open(CACHE_FILE) as f:
-        token = json.load(f)
-else:
-    token = None
+if not os.path.exists(CACHE_FILE):
+    print(f"❌ Cache file '{CACHE_FILE}' not found. Please provide a valid cache file.")
+    sys.exit(1)
+with open(CACHE_FILE) as f:
+    token = json.load(f)
 
-auth = Auth(USER_AGENT, token, save_token)
-if not token:
-    username = input("Ring Username: ")
-    password = getpass("Ring Password: ")
-    try:
-        auth.fetch_token(username, password)
-    except Exception:
-        code = input("2FA Code: ")
-        auth.fetch_token(username, password, code)
+auth = Auth(USER_AGENT, token, None)
 
 # --- Get devices ---
 ring = Ring(auth)
@@ -57,19 +52,27 @@ for ev in events:
     
     created_str = ev['created_at'].strftime("%Y-%m-%d_%H-%M-%S")
     filename = os.path.join(OUTPUT_DIR, f"{created_str}-{vid_id}.mp4")
-    print(f"⬇️ Downloading {filename}..." + f" [{ev.get('kind')}]")
+    #print(f"⬇️ Downloading {filename}..." + f" [{ev.get('kind')}]")
     resp = requests.get(video_url, stream=True)
+ 
     with open(filename, "wb") as f:
         for chunk in resp.iter_content(1024 * 1024):
             f.write(chunk)
     sample = fo.Sample(filepath=filename, time_of_video=ev['created_at'])
+    sample['trigger_type'] = ev.get('kind')
     samples.append(sample)
+
 
 print(f"✅ Done. Videos saved in '{OUTPUT_DIR}'")
 
-dataset = fo.Dataset(name="ring_videos")
+# Check if dataset exists, load if so, else create
+if fo.dataset_exists("ring_videos"):
+    dataset = fo.load_dataset("ring_videos")
+else:
+    dataset = fo.Dataset(name="ring_videos")
+    dataset.persistent = True
+
 dataset.add_samples(samples)
-dataset.persistent = True
 session = fo.launch_app(dataset)
 session.wait()
 
